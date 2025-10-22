@@ -2,9 +2,12 @@ server:
   port: 8080
 
 spring:
+  jackson:
+    time-zone: GMT+8
+    date-format: yyyy-MM-dd HH:mm:ss
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
-    url: jdbc:mysql:///exam_system_new?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=GMT%2b8
+    url: jdbc:mysql://localhost:3306/exam_system_new?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=GMT%2b8
     username: root
     password: root
     hikari:
@@ -18,5 +21,17 @@ spring:
 
 #用于打印框架生成的sql语句，便于调试
 mybatis-plus:
+# 为MP添加 全局的逻辑删除 只要是MP注入的Sql语句且搭配了@TableLogic注解 那么就会走这个逻辑去进行逻辑删除
+  global-config:
+    db-config:
+      logic-delete-field: isDeleted # 全局逻辑删除的实体属性名(配置后可以忽略不配置步骤二)
+      logic-delete-value: 1 # 逻辑已删除值(默认为 1)
+      logic-not-delete-value: 0 # 逻辑未删除值(默认为 0)
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+# 为minio配置添加配置 目标ip 端口 目标 通过的 公钥以及私钥 以及bucket的name
+minio:
+  endpoint: http://<hostname>:<port>
+  access-key: <access-key>
+  secret-key: <secret-key>
+  bucket-name: <bucket-name>
