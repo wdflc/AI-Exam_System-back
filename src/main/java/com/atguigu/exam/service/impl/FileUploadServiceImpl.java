@@ -5,6 +5,7 @@ import com.atguigu.exam.service.FileUploadService;
 import io.minio.BucketExistsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
+import io.minio.PutObjectArgs;
 import io.minio.SetBucketPolicyArgs;
 import io.minio.errors.ErrorResponseException;
 import io.minio.errors.InsufficientDataException;
@@ -74,9 +75,17 @@ public class FileUploadServiceImpl implements FileUploadService {
         //4. 上传文件 putObject方法
         //putObject . 上传文件数据 .steam(文件输入流)
         //uploadObject .上传文件数据 .filename(文件的磁盘地址 c:\\)
-
+        minioClient.putObject(PutObjectArgs.builder()
+                .bucket(minioProperties.getBucketName())
+                .contentType(file.getContentType())
+                .stream(file.getInputStream(),file.getSize(),-1)
+                .object(objectName).build());
 
         //5. 拼接回显地址 【端点 + 桶 + 对象名】
-        return "";
+        String url = String.join("/",minioProperties.getEndpoint(),
+                minioProperties.getBucketName(),
+                objectName);
+        log.info("文件核心上传业务 完成{}文件的上传",objectName);
+        return url;
     }
 }
