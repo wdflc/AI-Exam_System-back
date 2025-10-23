@@ -33,6 +33,8 @@ mybatis-plus:
       logic-not-delete-value: 0 # 逻辑未删除值(默认为 0)
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    auto-mapping-behavior: full #开启嵌套自动映射
+    map-underscore-to-camel-case: true #驼峰映射也要开启
 # 为minio配置添加配置 目标ip 端口 目标 通过的 公钥以及私钥 以及bucket的name
 minio:
   endpoint: http://<hostname>:<port>

@@ -2,7 +2,10 @@ package com.atguigu.exam.controller;
 
 import com.atguigu.exam.common.Result;
 import com.atguigu.exam.entity.Question;
+import com.atguigu.exam.service.QuestionService;
 import com.atguigu.exam.vo.QuestionQueryVo;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -41,7 +44,13 @@ import java.util.stream.Collectors;
 @CrossOrigin(origins = "*")  // 允许跨域访问，解决前后端分离开发中的跨域问题
 @Tag(name = "题目管理", description = "题目相关的增删改查操作，包括分页查询、随机获取、热门推荐等功能")  // Swagger标签，用于分组显示API
 public class QuestionController {
-    
+
+    private final QuestionService questionService;
+
+    public QuestionController(QuestionService questionService) {
+        this.questionService = questionService;
+    }
+
     /**
      * 分页查询题目列表（支持多条件筛选）
      * 
@@ -55,14 +64,7 @@ public class QuestionController {
      * - Page对象：封装分页信息（页码、每页大小、总数等）
      * - QueryWrapper：动态构建查询条件，避免SQL注入
      * - 条件构建：支持等值查询(eq)、模糊查询(like)、排序(orderBy)
-     * 
-     * @param page 当前页码，从1开始，默认第1页
-     * @param size 每页显示数量，默认10条
-     * @param categoryId 分类ID筛选条件，可选
-     * @param difficulty 难度筛选条件（EASY/MEDIUM/HARD），可选
-     * @param type 题型筛选条件（CHOICE/JUDGE/TEXT），可选
-     * @param keyword 关键词搜索，对题目标题进行模糊查询，可选
-     * @return 封装的分页查询结果，包含题目列表和分页信息
+     *
      */
     @GetMapping("/list")  // 映射GET请求到/api/questions/list
     @Operation(summary = "分页查询题目列表", description = "支持按分类、难度、题型、关键词进行多条件筛选的分页查询")  // Swagger接口描述
@@ -70,6 +72,8 @@ public class QuestionController {
                                                   @Parameter(description = "每页显示的数量",example = "10")@RequestParam(defaultValue = "10")Integer size,
                                                   QuestionQueryVo questionQueryVo) {
         // 返回统一格式的成功响应
+        Page<Question> pageBean = new Page<>(page,size);
+        questionService.customPageService(pageBean,questionQueryVo);
         return Result.success(null);
     }
     
