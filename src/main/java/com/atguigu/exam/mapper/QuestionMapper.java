@@ -21,4 +21,6 @@ public interface QuestionMapper extends BaseMapper<Question> {
     List<Map<Long, Object>> getCategoryQuestionCount();
 
     void customPage(Page<Question> pageBean, QuestionQueryVo questionQueryVo);
+
+    Question customGetById(Long id);
 }

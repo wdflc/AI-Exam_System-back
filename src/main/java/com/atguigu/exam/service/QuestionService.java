@@ -34,4 +34,16 @@ public interface QuestionService extends IService<Question> {
 
 
     void customPageService(Page<Question> pageBean, QuestionQueryVo questionQueryVo);
+
+    void customPageJavaService(Page<Question> pageBean, QuestionQueryVo questionQueryVo);
+
+    Question customDetailQuestion(Long id);
+
+    void customSaveQuestion(Question question);
+
+    void customUpdateQuestion(Question question);
+
+    void customRemoveQuestionById(Long id);
+
+    List<Question> customFindPopularQuestions(Integer size);
 }

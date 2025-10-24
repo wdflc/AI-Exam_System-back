@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -42,6 +43,7 @@ import java.util.stream.Collectors;
 @RestController  // @Controller + @ResponseBody，表示这是一个REST控制器，返回JSON数据
 @RequestMapping("/api/questions")  // 设置基础URL路径，所有方法的URL都以此开头
 @CrossOrigin(origins = "*")  // 允许跨域访问，解决前后端分离开发中的跨域问题
+@Slf4j
 @Tag(name = "题目管理", description = "题目相关的增删改查操作，包括分页查询、随机获取、热门推荐等功能")  // Swagger标签，用于分组显示API
 public class QuestionController {
 
@@ -66,15 +68,27 @@ public class QuestionController {
      * - 条件构建：支持等值查询(eq)、模糊查询(like)、排序(orderBy)
      *
      */
+//    @GetMapping("/list")  // 映射GET请求到/api/questions/list
+//    @Operation(summary = "分页查询题目列表", description = "支持按分类、难度、题型、关键词进行多条件筛选的分页查询")  // Swagger接口描述
+//    public Result<Page<Question>> getQuestionList(@Parameter(description = "当前页码从1开始",example = "1")@RequestParam(defaultValue = "1")Integer page,
+//                                                  @Parameter(description = "每页显示的数量",example = "10")@RequestParam(defaultValue = "10")Integer size,
+//                                                  QuestionQueryVo questionQueryVo) {
+//        // 返回统一格式的成功响应
+//        Page<Question> pageBean = new Page<>(page,size);
+//        questionService.customPageService(pageBean,questionQueryVo);
+//        return Result.success(null);
+//    }
+
     @GetMapping("/list")  // 映射GET请求到/api/questions/list
     @Operation(summary = "分页查询题目列表", description = "支持按分类、难度、题型、关键词进行多条件筛选的分页查询")  // Swagger接口描述
     public Result<Page<Question>> getQuestionList(@Parameter(description = "当前页码从1开始",example = "1")@RequestParam(defaultValue = "1")Integer page,
                                                   @Parameter(description = "每页显示的数量",example = "10")@RequestParam(defaultValue = "10")Integer size,
                                                   QuestionQueryVo questionQueryVo) {
-        // 返回统一格式的成功响应
+        //现在使用Stream流去进行一个处理
         Page<Question> pageBean = new Page<>(page,size);
-        questionService.customPageService(pageBean,questionQueryVo);
-        return Result.success(null);
+        questionService.customPageJavaService(pageBean,questionQueryVo);
+        log.info("分页查询数据成功！ total为:{},数据为：",pageBean.getTotal(),pageBean.getRecords());
+        return Result.success(pageBean);
     }
     
     /**
@@ -92,8 +106,9 @@ public class QuestionController {
     @Operation(summary = "根据ID查询题目详情", description = "获取指定ID的题目完整信息，包括题目内容、选项、答案等详细数据")  // API描述
     public Result<Question> getQuestionById(
             @Parameter(description = "题目ID", example = "1") @PathVariable Long id) {
-
-        return Result.success(null);
+        Question question  =  questionService.customDetailQuestion(id);
+        log.info("查询题目详情调用成功！返回数据为{}",question);
+        return Result.success(question);
     }
     
     /**
@@ -115,7 +130,9 @@ public class QuestionController {
     @Operation(summary = "创建新题目", description = "添加新的考试题目，支持选择题、判断题、简答题等多种题型")  // API描述
     public Result<Question> createQuestion(@RequestBody Question question) {
 
-        return Result.success(null);
+        questionService.customSaveQuestion(question);
+        log.info("保存题目信息接口调用成功！最终结果为：{}",question);
+        return Result.success(question);
     }
     
     /**
@@ -135,7 +152,9 @@ public class QuestionController {
     public Result<Question> updateQuestion(
             @Parameter(description = "题目ID") @PathVariable Long id, 
             @RequestBody Question question) {
-        return Result.success(null);
+        questionService.customUpdateQuestion(question);
+        log.info("修改题目信息成功！！");
+        return Result.success(question);
     }
     
     /**
@@ -157,11 +176,10 @@ public class QuestionController {
     public Result<String> deleteQuestion(
             @Parameter(description = "题目ID") @PathVariable Long id) {
         // 根据操作结果返回不同的响应
-        if (true) {
-            return Result.success("题目删除成功");
-        } else {
-            return Result.error("题目删除失败");
-        }
+        questionService.customRemoveQuestionById(id);
+        log.info("删除置顶Id:{} 题目信息成功！！",id);
+
+        return Result.success("题目删除成功");
     }
     
     /**
@@ -257,9 +275,9 @@ public class QuestionController {
     @Operation(summary = "获取热门题目", description = "获取访问次数最多的热门题目，用于首页推荐展示")  // API描述
     public Result<List<Question>> getPopularQuestions(
             @Parameter(description = "返回题目数量", example = "10") @RequestParam(defaultValue = "10") Integer size) {
-
-        // 异常处理：记录日志并返回友好的错误信息
-        return Result.error("获取热门题目失败");
+        List<Question> questionList = questionService.customFindPopularQuestions(size);
+        log.info("查询热门题目接口调用成功 ");
+        return Result.success(questionList);
 
     }
 
