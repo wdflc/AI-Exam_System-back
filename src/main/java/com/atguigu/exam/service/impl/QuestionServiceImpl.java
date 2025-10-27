@@ -8,17 +8,22 @@ import com.atguigu.exam.mapper.QuestionAnswerMapper;
 import com.atguigu.exam.mapper.QuestionChoiceMapper;
 import com.atguigu.exam.mapper.QuestionMapper;
 import com.atguigu.exam.service.QuestionService;
+import com.atguigu.exam.utils.ExcelUtil;
 import com.atguigu.exam.utils.RedisUtils;
+import com.atguigu.exam.vo.QuestionImportVo;
 import com.atguigu.exam.vo.QuestionQueryVo;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -222,6 +227,76 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         }
         fillQuestionCHoiceAndAnswer(popularQuestions);
         return popularQuestions;
+    }
+
+    @Override
+    public List<QuestionImportVo> preViewExcel(MultipartFile file) throws IOException {
+        if(file == null || file.isEmpty()){
+            throw new RuntimeException("预览数据的问建为空!");
+        }
+        String originalFilename = file.getOriginalFilename();
+        if(!originalFilename.endsWith(".xls")&&!originalFilename.endsWith(".xlsx")){
+            throw new RuntimeException("预览数据的文件格式错误，必须是.xlsx 或者 xls!");
+        }
+        List<QuestionImportVo> questionImportVoList = ExcelUtil.parseExcel(file);
+        return questionImportVoList;
+    }
+
+    @Override
+    public int importBatchQuestions(List<QuestionImportVo> questions) {
+        if(questions == null || questions.isEmpty()){
+            throw new RuntimeException("导入的题目集合为空");
+        }
+        int successCount = 0;
+        for (int i = 0; i < questions.size(); i++) {
+            try{
+                Question question = convertQuestionImportVoToQuestion(questions.get(i));
+                customSaveQuestion(question);
+                successCount++;
+            }   catch (Exception e){
+                log.debug("{} 题目导入失败！",questions.get(i).getTitle());
+            }
+        }
+        return successCount;
+    }
+
+    private Question convertQuestionImportVoToQuestion(QuestionImportVo questionImportVo) {
+        //1. 给question本体属性赋值
+        Question question = new Question();
+        //question.setTitle(questionImportVo.getTitle());
+        /**
+         * 作用：给对象的属性进行赋值！根据另一个对象的相同属性值！
+         * 参数1：source 源对象 【提供值】
+         * 参数2：target 目标对象 【接收值】
+         */
+        BeanUtils.copyProperties(questionImportVo,question);
+
+        //2. 判断是选择，给选项集合进行赋值
+        if ("CHOICE".equals(questionImportVo.getType())){
+            if (questionImportVo.getChoices().size() > 0) {
+                List<QuestionChoice> questionChoices = new ArrayList<>(questionImportVo.getChoices().size());
+                for (QuestionImportVo.ChoiceImportDto importVoChoice : questionImportVo.getChoices()) {
+                    QuestionChoice questionChoice = new QuestionChoice();
+                    questionChoice.setContent(importVoChoice.getContent());
+                    questionChoice.setIsCorrect(importVoChoice.getIsCorrect());
+                    questionChoice.setSort(importVoChoice.getSort());
+                    questionChoices.add(questionChoice);
+                }
+                question.setChoices(questionChoices);
+            }
+        }
+        //3. 不管是不是选择题创建答案对象并赋值 【保存的时候，获取答案对象，选择题可以没有答案值，保存会判断答案值】
+        QuestionAnswer questionAnswer = new QuestionAnswer();
+        //判断题，需要将true和false转成大写！ 否则无法识别！！
+        if ("JUDGE".equals(questionImportVo.getType())){
+            questionAnswer.setAnswer(questionImportVo.getAnswer().toUpperCase());
+        }else{
+            questionAnswer.setAnswer(questionImportVo.getAnswer());
+        }
+        questionAnswer.setKeywords(questionImportVo.getKeywords());
+        question.setAnswer(questionAnswer);
+
+        return question;
     }
 
     private void increamentQuestion(Long id) {
