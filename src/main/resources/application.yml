@@ -47,3 +47,11 @@ minio:
   secret-key: <secret-key>
   bucket-name: <bucket-name>
 
+# AI 服务配置
+kimi:
+  api:
+    base-url: https://api.moonshot.cn/v1
+    api-key: 你的key  # 从环境变量获取，或使用默认值
+    model: moonshot-v1-32k  # 使用8k上下文模型进行判卷
+    max-tokens: 2000  # 最大生成token数
+    temperature: 0.3  # 较低的temperature确保判卷结果稳定
